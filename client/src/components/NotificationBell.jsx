@@ -1,33 +1,59 @@
+import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "../context/NotificationContext.jsx";
-
-// TODO Task 2: Add unread badge
-// TODO Task 3: Add click-outside dropdown
-//
-// Steps:
-// 1. Read `unreadCount` from useNotifications().state
-// 2. Add a useState for `open` (boolean)
-// 3. Add a useRef on the outer container div
-// 4. Render the badge ONLY when unreadCount > 0 (conditional render, not CSS hide)
-//    Cap at 99+: {unreadCount > 99 ? "99+" : unreadCount}
-//    Add aria-label to the button: `Notifications, ${unreadCount} unread`
-// 5. Add useEffect that runs when `open` is true:
-//    - add document mousedown listener
-//    - close when !containerRef.current.contains(e.target)
-//    - return cleanup: remove the listener
-// 6. When open, render <NotificationDropdown onClose={() => setOpen(false)} />
+import NotificationDropdown from "./NotificationDropdown.jsx";
 
 export default function NotificationBell() {
-  // TODO: implement badge and click-outside dropdown
+  const { state } = useNotifications();
+  const { unreadCount } = state;
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleMouseDown = (event) => {
+      if (!containerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [open]);
+
   return (
-    <div style={{ position: "relative" }}>
+    <div ref={containerRef} style={{ position: "relative" }}>
       <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
         style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.3rem", color: "#fff" }}
-        aria-label="Notifications"
+        aria-label={`Notifications, ${unreadCount} unread`}
       >
         🔔
       </button>
-      {/* badge goes here */}
-      {/* dropdown goes here */}
+      {unreadCount > 0 && (
+        <span
+          style={{
+            position: "absolute",
+            top: "-6px",
+            right: "-8px",
+            minWidth: "1.2rem",
+            height: "1.2rem",
+            borderRadius: "9999px",
+            background: "#ef4444",
+            color: "#fff",
+            fontSize: "0.65rem",
+            fontWeight: 700,
+            lineHeight: "1.2rem",
+            textAlign: "center",
+            padding: "0 0.2rem",
+            boxShadow: "0 0 0 2px rgba(30, 27, 75, 1)",
+          }}
+        >
+          {unreadCount > 99 ? "99+" : unreadCount}
+        </span>
+      )}
+      {open && <NotificationDropdown onClose={() => setOpen(false)} />}
     </div>
   );
 }
